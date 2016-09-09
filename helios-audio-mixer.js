@@ -874,9 +874,9 @@ var Track = function(name, opts, mix){
 
   function setup(){
     // append extension only if it’s a file path
-    if(typeof options.source === 'string' && options.source.indexOf('blob:') !== 0){
-      options.source  += mix.options.fileTypes[0];
-    }
+    // if(typeof options.source === 'string' && options.source.indexOf('blob:') !== 0){
+    //   options.source  += mix.options.fileTypes[0];
+    // }
 
     // Web Audio
     if(options.sourceMode === 'buffer') {

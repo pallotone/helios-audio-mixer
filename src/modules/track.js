@@ -760,15 +760,16 @@ var Track = function (name, opts, mix) {
         options.gain = setTo;
       }
 
-      if (options.sourceMode === 'buffer') {
+      if (options.sourceMode === 'buffer' && nodes.gain) {
         nodes.gain.gain.value = options.gain * mix.options.gain;
       }
 
 
       // if element source, also adjust the media element,
       // because the gain node is meaningless in this context
-      if (options.sourceMode === 'element')
+      if (options.sourceMode === 'element') {
         element.volume = options.gain * mix.options.gain
+      }
 
       // setters should be chainable
       events.trigger('gain', track);

@@ -104,6 +104,28 @@ Mix.prototype.trigger = events.trigger;
 
  **************************************************************************/
 
+Mix.prototype.addTrack = function (track) {
+  var mix = this;
+
+  var trackName;
+  if (typeof track === 'object' && track.name) {
+    trackName = track.name;
+  } else {
+    return false;
+  }
+
+  if (mix.lookup[trackName]) {
+    debug.log(0, 'a track named “' + trackName + '” already exists in the mix');
+    return false;
+  }
+
+  mix.tracks.push(track);
+  mix.lookup[trackName] = track;
+
+  return track;
+};
+
+
 Mix.prototype.createTrack = function (name, opts) {
   var mix = this;
 
@@ -188,12 +210,24 @@ Mix.prototype.getTrack = function (name) {
 
  **************************************************************************/
 
-Mix.prototype.pause = function () {
+Mix.prototype.sync = function (trackToSyncWith) {
+
+
+  for (var i = 0; i < this.tracks.length; i++) {
+    if (this.tracks[i] != trackToSyncWith) {
+      this.tracks[i].mute();
+      this.tracks[i].play();
+      this.tracks[i].currentTime(trackToSyncWith.currentTime());
+    }
+  }
+};
+
+Mix.prototype.pause = function (at) {
 
   debug.log(2, 'Pausing ' + this.tracks.length + ' track(s) ||');
 
   for (var i = 0; i < this.tracks.length; i++) {
-    this.tracks[i].pause();
+    this.tracks[i].pause(typeof at === 'number' ? at : undefined);
   }
 };
 

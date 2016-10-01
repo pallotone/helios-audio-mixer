@@ -1,10 +1,10 @@
 /*
 
  ###### #####   #####   ##### ##  ##
- ##   ##  ## ##   ## ##     ## ##
- ##   #####  ####### ##     ####
- ##   ##  ## ##   ## ##     ## ##
- ##   ##  ## ##   ##  ##### ##  ##
+ . ##   ##  ## ##   ## ##     ## ##
+ . ##   #####  ####### ##     ####
+ . ##   ##  ## ##   ## ##     ## ##
+ . ##   ##  ## ##   ##  ##### ##  ##
 
  */
 
@@ -50,6 +50,8 @@ var Track = function (name, opts, mix) {
 
     gain: 1,      // initial/current gain (0-1)
     gainCache: false,  // for resuming from mute
+
+    panMode: 'stereo',
 
     pan: 0,  // circular horizontal pan
 
@@ -151,10 +153,10 @@ var Track = function (name, opts, mix) {
   /*
 
    ####  ###### ###### ##   ## ######
-   ##     ##       ##   ##   ## ##   ##
-   ####  #####    ##   ##   ## ######
-   ## ##       ##   ##   ## ##
-   #####  ######   ##    #####  ##
+   ##    ##       ##   ##   ## ##   ##
+   ##### #####    ##   ##   ## ######
+   /  ## ##       ##   ##   ## ##
+   ##### ######   ##    #####  ##
 
    */
 
@@ -511,10 +513,10 @@ var Track = function (name, opts, mix) {
 
   /*
 
-   #### ###### ######  ######
+   ##### ###### ######  ######
    ##      ##  ##    ## ##   ##
-   ####   ##  ##    ## ######
-   ##  ##  ##    ## ##
+   #####   ##  ##    ## ######
+   /  ##   ##  ##    ## ##
    #####   ##   ######  ##
 
    */
@@ -591,7 +593,12 @@ var Track = function (name, opts, mix) {
   }
 
   function createPanner(context, lastNode) {
-    var pannerNode = context.createPanner();
+    var pannerNode;
+    if (options.panMode === 'stereo') {
+      pannerNode = context.createStereoPanner();
+    } else {
+      pannerNode = context.createPanner();
+    }
     lastNode.connect(pannerNode);
     return pannerNode;
   }
@@ -700,30 +707,38 @@ var Track = function (name, opts, mix) {
   // "3d" stereo panning
   function pan(angleDeg) {
 
-    if (!detect.webAudio || !status.ready || !nodes.panner) return track;
-
-    if (typeof angleDeg === 'string') {
-      if (angleDeg === 'front') angleDeg = 0;
-      else if (angleDeg === 'back') angleDeg = 180;
-      else if (angleDeg === 'left') angleDeg = 270;
-      else if (angleDeg === 'right') angleDeg = 90;
+    if (!detect.webAudio || !status.ready || !nodes.panner) {
+      return track;
     }
 
-    if (typeof angleDeg === 'number') {
+    if (options.panMode === '3d' || options.panMode === '360') {
+      if (typeof angleDeg === 'string') {
+        if (angleDeg === 'front') angleDeg = 0;
+        else if (angleDeg === 'back') angleDeg = 180;
+        else if (angleDeg === 'left') angleDeg = 270;
+        else if (angleDeg === 'right') angleDeg = 90;
+      }
 
-      options.pan = angleDeg % 360;
+      if (typeof angleDeg === 'number') {
 
-      var angleRad = (-angleDeg + 90) * 0.017453292519943295; // * PI/180
+        options.pan = angleDeg % 360;
 
-      var x = options.panX = Math.cos(angleRad);
-      var y = options.panY = Math.sin(angleRad);
-      var z = options.panZ = -0.5;
+        var angleRad = (-angleDeg + 90) * 0.017453292519943295; // * PI/180
 
-      nodes.panner.setPosition(x, y, z);
+        var x = options.panX = Math.cos(angleRad);
+        var y = options.panY = Math.sin(angleRad);
+        var z = options.panZ = -0.5;
 
+        nodes.panner.setPosition(x, y, z);
+
+        events.trigger('pan', track);
+
+        return track; // all setters should be chainable
+      }
+    } else if (options.panMode === 'stereo') {
+      nodes.panner.pan.value = options.pan;
       events.trigger('pan', track);
-
-      return track; // all setters should be chainable
+      return track;
     }
 
     return options.pan;
@@ -731,11 +746,11 @@ var Track = function (name, opts, mix) {
 
   /*
 
-   #####   #####  #### ###  ##
+   #####   ####### #### ###  ##
    ##      ##   ##  ##  #### ##
    ##  ### #######  ##  ## ####
    ##   ## ##   ##  ##  ##  ###
-   #####  ##   ## #### ##   ##
+   ######  ##   ## #### ##   ##
 
    */
 

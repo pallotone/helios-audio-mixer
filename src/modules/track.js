@@ -16,8 +16,9 @@ var Events = require('./events');
 var Track = function (name, opts, mix) {
   var track = this;
 
-  if (!opts.source)
+  if (!opts.source) {
     throw new Error('Can’t create a track without a source.');
+  }
 
   var nodeCreators = {
     analyse: createAnalyse,
@@ -29,13 +30,15 @@ var Track = function (name, opts, mix) {
 
   // validate node types
   var nodeError = false;
-  if (opts.nodes)
+  if (opts.nodes) {
     if (opts.nodes.length) {
       opts.nodes.forEach(function (node) {
-        if (typeof node === 'string' && !nodeCreators[node])
+        if (typeof node === 'string' && !nodeCreators[node]) {
           nodeError = '"' + node + '" is an unsupported node type';
-      })
+        }
+      });
     }
+  }
   if (nodeError) {
     throw new Error(nodeError);
   }
@@ -92,6 +95,7 @@ var Track = function (name, opts, mix) {
   var source;
   var gainTween;
   var httpRequest;
+  var pannerType;
 
   var shouldPlay = false;
 
@@ -114,9 +118,11 @@ var Track = function (name, opts, mix) {
   track.options = options;
   track.nodes = nodes;
   track.analysis = analysis;
+  this.source = source;
 
-  if (options.sourceMode === 'element')
+  if (options.sourceMode === 'element') {
     track.element = element;
+  }
 
   // Events
   track.on = events.on.bind(track);
@@ -172,7 +178,7 @@ var Track = function (name, opts, mix) {
       loadBufferSource()
         .then(function () {
 
-        })
+        });
 
     } else if (options.sourceMode === 'element') {
 
@@ -184,7 +190,7 @@ var Track = function (name, opts, mix) {
       loadMediaStream();
 
     } else {
-      throw new Error('"' + options.sourceMode + '" is an invalid source mode.')
+      throw new Error('"' + options.sourceMode + '" is an invalid source mode.');
     }
 
   }
@@ -194,8 +200,12 @@ var Track = function (name, opts, mix) {
     debug.log(2, 'Track "' + name + '" using HTML5 element source: "' + options.source + '"');
 
     // Add options
-    if (options.loop)  element.loop = true;
-    if (options.muted) element.muted = true;
+    if (options.loop)  {
+      element.loop = true;
+    }
+    if (options.muted) {
+      element.muted = true;
+    }
     element.volume = options.gain;
     element.crossOrigin = '';
 
@@ -235,7 +245,7 @@ var Track = function (name, opts, mix) {
       httpRequest.addEventListener('error', loadError, false);
 
       httpRequest.send();
-    })
+    });
   }
 
 
@@ -254,7 +264,9 @@ var Track = function (name, opts, mix) {
         if (shouldPlay) {
           play();
         } else {
-          if (options.autoplay) play();
+          if (options.autoplay) {
+            play();
+          }
         }
       } else {
         // other -> failure
@@ -262,7 +274,7 @@ var Track = function (name, opts, mix) {
         events.trigger('loadError', track, {status: this.status});
       }
 
-      httpRequest = null
+      httpRequest = null;
     }
   }
 
@@ -292,7 +304,7 @@ var Track = function (name, opts, mix) {
 
     if (options.sourceMode === 'buffer') {
       createBufferSource()
-        .then(playBufferSource)
+        .then(playBufferSource);
     } else if (options.sourceMode === 'element') {
       playElementSource();
     } else if (options.sourceMode === 'mediaStream') {
@@ -354,34 +366,34 @@ var Track = function (name, opts, mix) {
       source = null;
 
       // W3C standard implementation (Firefox, recent Chrome)
-      if (typeof mix.context.createGain === 'function') {
-
+      //if (typeof mix.context.createGain === 'function') {
         mix.context.decodeAudioData(audioData, function (decodedBuffer) {
-          if (status.ready) return;
-
+          if (status.ready) {
+            return;
+          }
           source = mix.context.createBufferSource();
+          this.source = source;
           var sourceBuffer = decodedBuffer;
           source.buffer = sourceBuffer;
 
-          resolve()
+          resolve();
         });
-      }
+      //}
 
       // Non-standard Webkit implementation (Safari, old Chrome)
-      else if (typeof mix.context.createGainNode === 'function') {
-
-        source = mix.context.createBufferSource();
-        var sourceBuffer = mix.context.createBuffer(audioData, true);
-        source.buffer = sourceBuffer;
-
-        resolve()
-      }
-    })
+      // else if (typeof mix.context.createGainNode === 'function') {
+      //
+      //   source = mix.context.createBufferSource();
+      //   var sourceBuffer = mix.context.createBuffer(audioData, true);
+      //   source.buffer = sourceBuffer;
+      //
+      //   resolve()
+      // }
+    });
 
   }
 
   function playBufferSource() {
-
     createNodes();
 
     status.ready = true;
@@ -399,16 +411,14 @@ var Track = function (name, opts, mix) {
     if (typeof source.start === 'function') {
       source.start(0, startFrom);
     } else {
-      source.noteOn(startFrom);
+      source.noteOn(startFrom+0.1);
     }
 
     // Apply Options
     source.loop = (options.loop) ? true : false;
     gain(options.gain);
     pan(options.pan);
-
     setEndTimer();
-
     status.playing = true;
     events.trigger('play', track);
   }
@@ -447,8 +457,10 @@ var Track = function (name, opts, mix) {
 
   function loadMediaStream(shouldPlay) {
     source = mix.context.createMediaStreamSource(options.source);
-    status.loaded = true
-    if (options.autoplay || shouldPlay) play();
+    status.loaded = true;
+    if (options.autoplay || shouldPlay) {
+      play();
+    }
   }
 
   function playMediaStreamSource() {
@@ -492,7 +504,6 @@ var Track = function (name, opts, mix) {
     if (onendtimer) {
       clearTimeout(onendtimer);
     }
-
     if (options.sourceMode === 'buffer') {
       // prefer stop(), fallback to deprecated noteOff()
       if (typeof source.stop === 'function') {
@@ -534,8 +545,12 @@ var Track = function (name, opts, mix) {
 
     if (options.sourceMode === 'buffer') {
       // prefer stop(), fallback to deprecated noteOff()
-      if (typeof source.stop === 'function')         source.stop(0);
-      else if (typeof source.noteOff === 'function') source.noteOff(0);
+      if (typeof source.stop === 'function') {
+        source.stop(0);
+      }
+      else if (typeof source.noteOff === 'function') {
+        source.noteOff(0);
+      }
     } else {
 
       options.autoplay = false;
@@ -564,11 +579,8 @@ var Track = function (name, opts, mix) {
 
   function createNodes() {
     var nodeArray = ['panner', 'gain'].concat((options.nodes || []));
-
     var lastNode = source;
-
     nodeArray.forEach(function (node) {
-
       if (typeof node === 'string') {
         if (nodeCreators[node]) {
           var newNode = nodeCreators[node](mix.context, lastNode);
@@ -587,31 +599,37 @@ var Track = function (name, opts, mix) {
 
 
   function createGain(context, lastNode) {
-    var gainNode = context.createGainNode ? context.createGainNode() : context.createGain();
+    var gainNode = context.createGain();
     lastNode.connect(gainNode);
     return gainNode;
   }
 
   function createPanner(context, lastNode) {
     var pannerNode;
-    if (options.panMode === 'stereo') {
+    if (options.panMode==='stereo' && typeof context.createStereoPanner === 'function') {
       pannerNode = context.createStereoPanner();
+      pannerType = 'stereo';
     } else {
       pannerNode = context.createPanner();
+      pannerType = '3d';
     }
     lastNode.connect(pannerNode);
     return pannerNode;
   }
 
   function createConvolver(context, lastNode) {
-    if (!context.createConvolver) return lastNode;
+    if (!context.createConvolver) {
+      return lastNode;
+    }
     var convolverNode = context.createConvolver();
     lastNode.connect(convolverNode);
     return convolverNode;
   }
 
   function createCompressor(context, lastNode) {
-    if (!context.createDynamicsCompressor) return lastNode;
+    if (!context.createDynamicsCompressor) {
+      return lastNode;
+    }
     var compressorNode = context.createDynamicsCompressor();
     lastNode.connect(compressorNode);
     return compressorNode;
@@ -656,7 +674,9 @@ var Track = function (name, opts, mix) {
   }
 
   function getAnalysis() {
-    if (!nodes.analyse) return
+    if (!nodes.analyse) {
+      return;
+    }
 
     var third = Math.round(options.bufferLength / 3);
     var scratch = 0;
@@ -666,35 +686,39 @@ var Track = function (name, opts, mix) {
 
     // calculate average, mid, high
     scratch = 0;
-    for (i = 0; i < options.bufferLength; i++)
+    for (i = 0; i < options.bufferLength; i++) {
       scratch += track.analysis.raw[i];
+    }
 
     track.analysis.average = (scratch / options.bufferLength) / 256;
 
     // lows
     scratch = 0;
-    for (i = 0; i < third; i++)
+    for (i = 0; i < third; i++) {
       scratch += track.analysis.raw[i];
+    }
 
     track.analysis.low = scratch / third / 256;
 
     // mids
     scratch = 0;
-    for (i = third; i < third * 2; i++)
+    for (i = third; i < third * 2; i++) {
       scratch += track.analysis.raw[i];
+    }
 
     track.analysis.mid = scratch / third / 256;
 
     // highs
     scratch = 0;
-    for (i = third * 2; i < options.bufferLength; i++)
+    for (i = third * 2; i < options.bufferLength; i++) {
       scratch += track.analysis.raw[i];
+    }
 
     track.analysis.high = scratch / third / 256;
 
     events.trigger('analyse', track);
 
-    return track.analysis
+    return track.analysis;
   }
 
 
@@ -713,10 +737,15 @@ var Track = function (name, opts, mix) {
 
     if (options.panMode === '3d' || options.panMode === '360') {
       if (typeof angleDeg === 'string') {
-        if (angleDeg === 'front') angleDeg = 0;
-        else if (angleDeg === 'back') angleDeg = 180;
-        else if (angleDeg === 'left') angleDeg = 270;
-        else if (angleDeg === 'right') angleDeg = 90;
+        if (angleDeg === 'front') {
+          angleDeg = 0;
+        } else if (angleDeg === 'back') {
+          angleDeg = 180;
+        } else if (angleDeg === 'left') {
+          angleDeg = 270;
+        } else if (angleDeg === 'right') {
+          angleDeg = 90;
+        }
       }
 
       if (typeof angleDeg === 'number') {
@@ -736,7 +765,18 @@ var Track = function (name, opts, mix) {
         return track; // all setters should be chainable
       }
     } else if (options.panMode === 'stereo') {
-      nodes.panner.pan.value = options.pan;
+      if(pannerType==='stereo') {
+        nodes.panner.pan.value = angleDeg;
+      } else {
+        var xDeg = parseInt(angleDeg);
+        var zDeg = xDeg + 90;
+        if (zDeg > 90) {
+          zDeg = 180 - zDeg;
+        }
+        var panX = Math.sin(xDeg * (Math.PI / 180));
+        var panZ = Math.sin(zDeg * (Math.PI / 180));
+        nodes.panner.setPosition(panX, 0, panZ);
+      }
       events.trigger('pan', track);
       return track;
     }
@@ -783,7 +823,7 @@ var Track = function (name, opts, mix) {
       // if element source, also adjust the media element,
       // because the gain node is meaningless in this context
       if (options.sourceMode === 'element') {
-        element.volume = options.gain * mix.options.gain
+        element.volume = options.gain * mix.options.gain;
       }
 
       // setters should be chainable
@@ -793,29 +833,34 @@ var Track = function (name, opts, mix) {
 
     // accurately report gain while we’re tweening it
     if (options.sourceMode === 'buffer') {
-      if (status.playing)
-        if (nodes.gain)
-          options.gain = nodes.gain.gain.value
+      if (status.playing) {
+        if (nodes.gain) {
+          options.gain = nodes.gain.gain.value;
+        }
+      }
     }
 
     return options.gain;
   }
 
   function tweenGain(setTo, duration) {
-    if (typeof setTo !== 'number' || typeof duration !== 'number')
+    if (typeof setTo !== 'number' || typeof duration !== 'number') {
       throw new Error('Invalid arguments to tweenGain()');
+    }
 
     setTo = u.constrain(setTo, 0.01, 1); // can’t ramp to 0, will error
 
-    if (gainTween) gainTween.stop()
+    if (gainTween) {
+      gainTween.stop();
+    }
 
     gainTween = new TWEEN.Tween({gain: options.gain})
       .to({gain: setTo}, 1000 * duration)
       .start();
 
     gainTween.onUpdate(function () {
-      gain(this.gain)
-    })
+      gain(this.gain);
+    });
 
   }
 
@@ -830,16 +875,18 @@ var Track = function (name, opts, mix) {
     gain(0);
     options.muted = true;
     status.muted = true;
-    if (options.sourceMode === 'element')
+    if (options.sourceMode === 'element') {
       element.muted = true;
-    return track
+    }
+    return track;
   }
 
   function unmute() {
     options.muted = false;
     status.muted = false;
-    if (options.sourceMode === 'element')
+    if (options.sourceMode === 'element') {
       element.muted = false;
+    }
     gain(options.gainCache);
     return track;
   }
@@ -852,8 +899,9 @@ var Track = function (name, opts, mix) {
    */
 
   function currentTime(setTo) {
-    if (!status.ready) return 0;
-
+    if (!status.ready) {
+      return 0;
+    }
     if (typeof setTo === 'number') {
       if (options.sourceMode === 'buffer') {
         if (status.playing) {
@@ -865,15 +913,14 @@ var Track = function (name, opts, mix) {
       } else {
         element.currentTime = setTo;
       }
-      return track
+      return track;
     }
-
     if (!status.playing) {
       return cachedTime || 0;
     }
-
     if (options.sourceMode === 'buffer') {
-      return source.context.currentTime - startTime || 0;
+      var curTime = source.context.currentTime - startTime || 0;
+      return curTime;
     } else {
       return element.currentTime || 0;
     }
@@ -926,7 +973,7 @@ var Track = function (name, opts, mix) {
 
   function addTimelineEvent(e) {
     timelineEvents.push({
-      id: (new Date).getTime(),
+      id: (new Date()).getTime(),
       start: e.start,
       end: e.end,
       onstart: e.onstart,
@@ -941,23 +988,31 @@ var Track = function (name, opts, mix) {
 
       // check where we are at
       var now = currentTime();
-      if (!now) return;
+      if (!now) {
+        return;
+      }
 
       timelineEvents.forEach(function (e) {
 
-        if (e.start || e.start === 0)
+        if (e.start || e.start === 0) {
           if (now >= e.start && !e.active) {
-            if (e.onstart) e.onstart.call(null, track);
+            if (e.onstart) {
+              e.onstart.call(null, track);
+            }
             e.active = true;
           }
+        }
 
 
-        if (e.end)
+        if (e.end) {
           if (now >= e.end && e.active) {
-            if (e.onend) e.onend.call(null, track);
+            if (e.onend) {
+              e.onend.call(null, track);
+            }
             e.active = false;
           }
-      })
+        }
+      });
     }
   }
 

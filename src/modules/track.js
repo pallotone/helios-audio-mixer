@@ -409,7 +409,7 @@ var Track = function (name, opts, mix) {
 
     // prefer start() but fall back to deprecated noteOn()
     if (typeof source.start === 'function') {
-      source.start(0, startFrom);
+      source.start(3, startFrom);
       console.log('start: ' + startFrom);
     } else {
       source.noteOn(startFrom + 0.1);

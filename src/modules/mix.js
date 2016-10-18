@@ -211,30 +211,22 @@ Mix.prototype.getTrack = function (name) {
  **************************************************************************/
 
 Mix.prototype.sync = function (trackToSyncWith) {
-
-
   for (var i = 0; i < this.tracks.length; i++) {
     if (this.tracks[i] != trackToSyncWith) {
-      this.tracks[i].mute();
-      this.tracks[i].play();
       this.tracks[i].currentTime(trackToSyncWith.currentTime());
     }
   }
 };
 
 Mix.prototype.pause = function (at) {
-
   debug.log(2, 'Pausing ' + this.tracks.length + ' track(s) ||');
-
   for (var i = 0; i < this.tracks.length; i++) {
     this.tracks[i].pause(typeof at === 'number' ? at : undefined);
   }
 };
 
 Mix.prototype.play = function () {
-
   debug.log(2, 'Playing ' + this.tracks.length + ' track(s) >');
-
   for (var i = 0; i < this.tracks.length; i++) {
     this.tracks[i].play();
   }

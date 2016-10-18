@@ -384,30 +384,22 @@ Mix.prototype.getTrack = function (name) {
  **************************************************************************/
 
 Mix.prototype.sync = function (trackToSyncWith) {
-
-
   for (var i = 0; i < this.tracks.length; i++) {
     if (this.tracks[i] != trackToSyncWith) {
-      this.tracks[i].mute();
-      this.tracks[i].play();
       this.tracks[i].currentTime(trackToSyncWith.currentTime());
     }
   }
 };
 
 Mix.prototype.pause = function (at) {
-
   debug.log(2, 'Pausing ' + this.tracks.length + ' track(s) ||');
-
   for (var i = 0; i < this.tracks.length; i++) {
     this.tracks[i].pause(typeof at === 'number' ? at : undefined);
   }
 };
 
 Mix.prototype.play = function () {
-
   debug.log(2, 'Playing ' + this.tracks.length + ' track(s) >');
-
   for (var i = 0; i < this.tracks.length; i++) {
     this.tracks[i].play();
   }
@@ -950,7 +942,7 @@ var Track = function (name, opts, mix) {
     debug.log(2, 'Track "' + name + '" using HTML5 element source: "' + options.source + '"');
 
     // Add options
-    if (options.loop)  {
+    if (options.loop) {
       element.loop = true;
     }
     if (options.muted) {
@@ -1117,17 +1109,17 @@ var Track = function (name, opts, mix) {
 
       // W3C standard implementation (Firefox, recent Chrome)
       //if (typeof mix.context.createGain === 'function') {
-        mix.context.decodeAudioData(audioData, function (decodedBuffer) {
-          if (status.ready) {
-            return;
-          }
-          source = mix.context.createBufferSource();
-          this.source = source;
-          var sourceBuffer = decodedBuffer;
-          source.buffer = sourceBuffer;
+      mix.context.decodeAudioData(audioData, function (decodedBuffer) {
+        if (status.ready) {
+          return;
+        }
+        source = mix.context.createBufferSource();
+        this.source = source;
+        var sourceBuffer = decodedBuffer;
+        source.buffer = sourceBuffer;
 
-          resolve();
-        });
+        resolve();
+      });
       //}
 
       // Non-standard Webkit implementation (Safari, old Chrome)
@@ -1160,8 +1152,9 @@ var Track = function (name, opts, mix) {
     // prefer start() but fall back to deprecated noteOn()
     if (typeof source.start === 'function') {
       source.start(0, startFrom);
+      console.log('start: ' + startFrom);
     } else {
-      source.noteOn(startFrom+0.1);
+      source.noteOn(startFrom + 0.1);
     }
 
     // Apply Options
@@ -1356,7 +1349,7 @@ var Track = function (name, opts, mix) {
 
   function createPanner(context, lastNode) {
     var pannerNode;
-    if (options.panMode==='stereo' && typeof context.createStereoPanner === 'function') {
+    if (options.panMode === 'stereo' && typeof context.createStereoPanner === 'function') {
       pannerNode = context.createStereoPanner();
       pannerType = 'stereo';
     } else {
@@ -1515,7 +1508,7 @@ var Track = function (name, opts, mix) {
         return track; // all setters should be chainable
       }
     } else if (options.panMode === 'stereo') {
-      if(pannerType==='stereo') {
+      if (pannerType === 'stereo') {
         nodes.panner.pan.value = angleDeg;
       } else {
         var xDeg = parseInt(angleDeg);

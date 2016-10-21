@@ -401,7 +401,7 @@ Mix.prototype.pause = function (at) {
 Mix.prototype.play = function () {
   debug.log(2, 'Playing ' + this.tracks.length + ' track(s) >');
   for (var i = 0; i < this.tracks.length; i++) {
-    this.tracks[i].play();
+    this.tracks[i].play(this.context.currentTime + 2);
   }
 };
 
@@ -830,6 +830,7 @@ var Track = function (name, opts, mix) {
 
   var startTime = 0; // global (unix) time started (cached for accurately reporting currentTime)
   var cachedTime = 0; // local current time (cached for resuming from pause)
+  var startPlayAt = 0;
 
   var onendtimer;
   var audioData;
@@ -1030,7 +1031,10 @@ var Track = function (name, opts, mix) {
    ##      ##### ##   ##   ##
 
    */
-  function play() {
+  function play(startPlay) {
+    if (startPlay !== undefined) {
+      startPlayAt = startPlay;
+    }
 
     // if track isn’t loaded yet, tell it to play when it loads
     if (!status.loaded) {
@@ -1151,8 +1155,8 @@ var Track = function (name, opts, mix) {
 
     // prefer start() but fall back to deprecated noteOn()
     if (typeof source.start === 'function') {
-      source.start(0, startFrom);
-      console.log('start: ' + startFrom);
+      source.start(startPlayAt, startFrom);
+      console.log('start+3: ' + startFrom, startTime, startPlayAt);
     } else {
       source.noteOn(startFrom + 0.1);
     }

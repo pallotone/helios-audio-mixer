@@ -228,7 +228,7 @@ Mix.prototype.pause = function (at) {
 Mix.prototype.play = function () {
   debug.log(2, 'Playing ' + this.tracks.length + ' track(s) >');
   for (var i = 0; i < this.tracks.length; i++) {
-    this.tracks[i].play();
+    this.tracks[i].play(this.context.currentTime + 2);
   }
 };
 

@@ -188,7 +188,6 @@ var html5Track = require('./track-html5');
 var detect = require('./detect');
 var debug = require('./debug');
 
-
 var Mix = function (opts) {
 
   var mix = this;
@@ -400,8 +399,11 @@ Mix.prototype.pause = function (at) {
 
 Mix.prototype.play = function () {
   debug.log(2, 'Playing ' + this.tracks.length + ' track(s) >');
+  var playAt = this.context.currentTime + 0.5; //ensures perfect sync :), don't start playing until 0.5 seconds from now to let all the tracks get into place
   for (var i = 0; i < this.tracks.length; i++) {
-    this.tracks[i].play(this.context.currentTime + 5);
+    console.time('play' + i);
+    this.tracks[i].play(playAt);
+    console.timeEnd('play' + i);
   }
 };
 
@@ -831,11 +833,13 @@ var Track = function (name, opts, mix) {
   var startTime = 0; // global (unix) time started (cached for accurately reporting currentTime)
   var cachedTime = 0; // local current time (cached for resuming from pause)
   var startPlayAt = 0;
+  var ranNum = Math.floor(Math.random() * 1000);
 
   var onendtimer;
   var audioData;
   var element;
   var source;
+  var buffer;
   var gainTween;
   var httpRequest;
   var pannerType;
@@ -1002,15 +1006,18 @@ var Track = function (name, opts, mix) {
         // 200 -> success
         debug.log(2, '"' + name + '" loaded "' + options.source + '"');
         audioData = this.response; // cache the audio data
-        status.loaded = true;
-        events.trigger('load', track);
-        if (shouldPlay) {
-          play();
-        } else {
-          if (options.autoplay) {
-            play();
-          }
-        }
+        mix.context.decodeAudioData(audioData, function (decodedBuffer) {
+          buffer = decodedBuffer;
+          status.loaded = true;
+          events.trigger('load', track);
+          // if (shouldPlay) {
+          //   play();
+          // } else {
+          //   if (options.autoplay) {
+          //     play();
+          //   }
+          // }
+        });
       } else {
         // other -> failure
         debug.log(1, 'couldn’t load track "' + name + '" with source "' + options.source + '"');
@@ -1032,6 +1039,7 @@ var Track = function (name, opts, mix) {
 
    */
   function play(startPlay) {
+    console.time('play' + ranNum);
     if (startPlay !== undefined) {
       startPlayAt = startPlay;
     }
@@ -1113,17 +1121,12 @@ var Track = function (name, opts, mix) {
 
       // W3C standard implementation (Firefox, recent Chrome)
       //if (typeof mix.context.createGain === 'function') {
-      mix.context.decodeAudioData(audioData, function (decodedBuffer) {
-        if (status.ready) {
-          return;
-        }
+      if (buffer) {
         source = mix.context.createBufferSource();
         this.source = source;
-        var sourceBuffer = decodedBuffer;
-        source.buffer = sourceBuffer;
-
+        source.buffer = buffer;
         resolve();
-      });
+      }
       //}
 
       // Non-standard Webkit implementation (Safari, old Chrome)
@@ -1140,34 +1143,37 @@ var Track = function (name, opts, mix) {
   }
 
   function playBufferSource() {
-    createNodes();
+    if (!status.playing) {
+      createNodes();
 
-    status.ready = true;
-    events.trigger('ready', track);
+      status.ready = true;
+      //events.trigger('ready', track);
 
-    // Play
-    // ~~~~
+      // Play
+      // ~~~~
 
-    startTime = source.context.currentTime - cachedTime;
-    var startFrom = cachedTime || 0;
+      startTime = source.context.currentTime - cachedTime;
+      var startFrom = cachedTime || 0;
 
-    debug.log(2, 'Playing track (buffer) "' + name + '" from ' + startFrom + ' (' + startTime + ') gain ' + gain());
+      debug.log(2, 'Playing track (buffer) "' + name + '" from ' + startFrom + ' (' + startTime + ') gain ' + gain());
 
-    // prefer start() but fall back to deprecated noteOn()
-    if (typeof source.start === 'function') {
-      source.start(startPlayAt, startFrom);
-      console.log('start+3: ' + startFrom, startTime, startPlayAt);
-    } else {
-      source.noteOn(startFrom + 0.1);
+      // prefer start() but fall back to deprecated noteOn()
+      if (typeof source.start === 'function') {
+        source.start(startPlayAt, startFrom);
+        console.timeEnd('play' + ranNum);
+        //console.log('currentTime', mix.context.currentTime, 'startPlayAt', startPlayAt, 'startFrom', startFrom, 'startTime', startTime, 'cachedTime', cachedTime);
+      } else {
+        source.noteOn(startFrom + 0.1);
+      }
+
+      // Apply Options
+      source.loop = (options.loop) ? true : false;
+      gain(options.gain);
+      pan(options.pan);
+      setEndTimer();
+      status.playing = true;
+      events.trigger('play', track);
     }
-
-    // Apply Options
-    source.loop = (options.loop) ? true : false;
-    gain(options.gain);
-    pan(options.pan);
-    setEndTimer();
-    status.playing = true;
-    events.trigger('play', track);
   }
 
 

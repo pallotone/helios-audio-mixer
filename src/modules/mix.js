@@ -15,7 +15,6 @@ var html5Track = require('./track-html5');
 var detect = require('./detect');
 var debug = require('./debug');
 
-
 var Mix = function (opts) {
 
   var mix = this;
@@ -227,8 +226,11 @@ Mix.prototype.pause = function (at) {
 
 Mix.prototype.play = function () {
   debug.log(2, 'Playing ' + this.tracks.length + ' track(s) >');
+  var playAt = this.context.currentTime + 0.5; //ensures perfect sync :), don't start playing until 0.5 seconds from now to let all the tracks get into place
   for (var i = 0; i < this.tracks.length; i++) {
-    this.tracks[i].play(this.context.currentTime + 5);
+    console.time('play' + i);
+    this.tracks[i].play(playAt);
+    console.timeEnd('play' + i);
   }
 };
 

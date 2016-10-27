@@ -226,7 +226,7 @@ Mix.prototype.pause = function (at) {
 
 Mix.prototype.play = function () {
   debug.log(2, 'Playing ' + this.tracks.length + ' track(s) >');
-  var playAt = this.context.currentTime + 0.5; //ensures perfect sync :), don't start playing until 0.5 seconds from now to let all the tracks get into place
+  var playAt = this.context.currentTime + 0.2; //ensures perfect sync :), don't start playing until 0.2 seconds from now to let all the tracks get into place
   for (var i = 0; i < this.tracks.length; i++) {
     console.time('play' + i);
     this.tracks[i].play(playAt);

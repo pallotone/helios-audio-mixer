@@ -375,6 +375,27 @@ Mix.prototype.getTrack = function (name) {
   return this.lookup[name] || false;
 };
 
+Mix.prototype.unlock = function unlock() {
+  // create empty buffer and play it
+  var buffer = this.context.createBuffer(1, 1, 22050);
+  var source = this.context.createBufferSource();
+  source.buffer = buffer;
+  source.connect(this.context.destination);
+  if (typeof source.start === 'function') {
+    source.start(0);
+  } else {
+    source.noteOn(0);
+  }
+
+  // by checking the play state after some time, we know if we're really unlocked
+  setTimeout(function () {
+    if ((source.playbackState === source.PLAYING_STATE || source.playbackState === source.FINISHED_STATE)) {
+      return true;
+    }
+    return false;
+  }, 0);
+};
+
 
 /**************************************************************************
 

@@ -841,13 +841,13 @@ var Track = function (name, opts, mix) {
     }
 
     // accurately report gain while we’re tweening it
-    if (options.sourceMode === 'buffer') {
-      if (status.playing) {
-        if (nodes.gain) {
-          options.gain = nodes.gain.gain.value;
-        }
-      }
-    }
+    // if (options.sourceMode === 'buffer') {
+    //   if (status.playing) {
+    //     if (nodes.gain) {
+    //       options.gain = nodes.gain.gain.value;
+    //     }
+    //   }
+    // }
 
     return options.gain;
   }

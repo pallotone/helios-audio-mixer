@@ -777,6 +777,7 @@ var u = require('./utils');
 var detect = require('./detect');
 var debug = require('./debug');
 var Events = require('./events');
+var downloadWorker = new Worker("/assets/scripts/pallotone-audio-mixer/download-worker.js");
 
 var Track = function (name, opts, mix) {
   var track = this;
@@ -1005,28 +1006,36 @@ var Track = function (name, opts, mix) {
     return new Promise(function (resolve, reject) {
       debug.log(2, 'Track "' + name + '" webAudio source: "' + options.source + '"');
 
-      httpRequest = new XMLHttpRequest();
-      httpRequest.open('GET', options.source, true);
-      httpRequest.responseType = 'arraybuffer';
+      // httpRequest = new XMLHttpRequest();
+      // httpRequest.open('GET', options.source, true);
+      // httpRequest.responseType = 'arraybuffer';
+      //
+      // httpRequest.addEventListener('readystatechange', onreadystatechange, false);
+      // httpRequest.addEventListener('error', loadError, false);
+      //
+      // httpRequest.send();
 
-      httpRequest.addEventListener('readystatechange', onreadystatechange, false);
-      httpRequest.addEventListener('error', loadError, false);
+      downloadWorker.postMessage(options.source);
 
-      httpRequest.send();
+      downloadWorker.onmessage = function (e) {
+        console.log('in onmessage callback', e);
+        onreadystatechange(e);
+      };
     });
   }
-
 
   function loadError() {
     events.trigger('loadError', track);
   }
 
   function onreadystatechange(e) {
-    if (this.readyState === 4) {
-      if (this.status === 200 || this.status === 206 || this.status === 304) {
+    console.log('in onreadystatechange', e);
+    var result = e.data;
+    if (result.readyState === 4) {
+      if (result.status === 200 || result.status === 206 || result.status === 304) {
         // 200 -> success
         debug.log(2, '"' + name + '" loaded "' + options.source + '"');
-        audioData = this.response; // cache the audio data
+        audioData = result.response; // cache the audio data
         mix.context.decodeAudioData(audioData, function (decodedBuffer) {
           buffer = decodedBuffer;
           status.loaded = true;
@@ -1042,10 +1051,10 @@ var Track = function (name, opts, mix) {
       } else {
         // other -> failure
         debug.log(1, 'couldn’t load track "' + name + '" with source "' + options.source + '"');
-        events.trigger('loadError', track, {status: this.status});
+        events.trigger('loadError', track, {status: result.status});
       }
 
-      httpRequest = null;
+      //httpRequest = null;
     }
   }
 

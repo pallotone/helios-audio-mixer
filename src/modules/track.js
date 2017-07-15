@@ -12,7 +12,6 @@ var u = require('./utils');
 var detect = require('./detect');
 var debug = require('./debug');
 var Events = require('./events');
-var downloadWorker = new Worker("/assets/scripts/pallotone-audio-mixer/download-worker.js");
 
 var Track = function (name, opts, mix) {
   var track = this;
@@ -240,7 +239,6 @@ var Track = function (name, opts, mix) {
   function loadBufferSource() {
     return new Promise(function (resolve, reject) {
       debug.log(2, 'Track "' + name + '" webAudio source: "' + options.source + '"');
-
       // httpRequest = new XMLHttpRequest();
       // httpRequest.open('GET', options.source, true);
       // httpRequest.responseType = 'arraybuffer';
@@ -249,12 +247,12 @@ var Track = function (name, opts, mix) {
       // httpRequest.addEventListener('error', loadError, false);
       //
       // httpRequest.send();
+      var downloadWorker = new Worker("/assets/scripts/pallotone-audio-mixer/download-worker.js");
 
       downloadWorker.postMessage(options.source);
 
       downloadWorker.onmessage = function (e) {
-        console.log('in onmessage callback', e);
-        onreadystatechange(e);
+        onreadystatechange(e.data);
       };
     });
   }
@@ -263,9 +261,7 @@ var Track = function (name, opts, mix) {
     events.trigger('loadError', track);
   }
 
-  function onreadystatechange(e) {
-    console.log('in onreadystatechange', e);
-    var result = e.data;
+  function onreadystatechange(result) {
     if (result.readyState === 4) {
       if (result.status === 200 || result.status === 206 || result.status === 304) {
         // 200 -> success

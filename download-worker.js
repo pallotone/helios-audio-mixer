@@ -7,7 +7,6 @@ function loadError() {
 }
 
 onmessage = function (e) {
-  console.log('in download worker', e);
   httpRequest = new XMLHttpRequest();
   httpRequest.open('GET', e.data, true);
   httpRequest.responseType = 'arraybuffer';
